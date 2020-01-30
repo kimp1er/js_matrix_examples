@@ -1,0 +1,12 @@
+div .row-matrix {
+  border-style: groove;
+  text-align: center;
+}
+
+div#table_matrix_body {
+  display: grid;
+}
+
+.row-matrix[10] {
+  color: gray;
+}
