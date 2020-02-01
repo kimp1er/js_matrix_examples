@@ -115,11 +115,12 @@ function startMatrix(){
 function getNewPosition(d){
   var x = start.x1
     , y = start.y1
+    , pos
 
   switch (d) {
       case 'left':
         console.log('left and %s %s', x,y)
-        pos = (mx[y][x -1 ] && mx[y]) ? mx[y][x - 1] : mx[y][x]
+        if (mx[y][x - 1] && mx[y]) pos = mx[y][x - 1]
       break;
       case 'right':
         console.log('right and %s %s', x,y)
@@ -127,21 +128,21 @@ function getNewPosition(d){
       break;
       case 'up':
         console.log('up and %s %s', x,y)
-        if (mx[y-1][x]) pos = mx[y - 1][x]
+        if (mx[y - 1] && mx[y - 1][x]) pos = mx[y - 1][x]
       break;
       case 'dawn':
         console.log('down and %s %s', x,y)
         if (mx[y+1][x]) pos = mx[y + 1][x]
       break;
       }
-  move_person_to(pos)
+  if (pos) move_person_to(pos)
 }
 
 function move_person_to(pos){
   var person = start.person
 
   console.log('Called getNewPosition', start, pos)
-  if (!pos.wall){
+  if (!pos.wall && pos){
     [start,  pos] = [pos, start]
     if (person){
       start.person = person
@@ -300,12 +301,13 @@ handleResize();
 
 function stupid_move() { 
   d = new Date();
-  if(d % 60 === 0 || d % 30 === 0 ){
-    if (dest_path.length) {
+  if (dest_path.length) {
+    if(d % 60 === 0 || d % 30 === 0 ){
       move_person_to(dest_path.pop());
-    } else {
-      cancelAnimationFrame(animates)
-    }
+    } 
+  }
+  else {
+    cancelAnimationFrame(animates)
   }
 }
 
