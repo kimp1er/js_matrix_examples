@@ -25,18 +25,27 @@ window.onresize = () => handleResize();
 handleResize();
 
 class Point {
-  constructor(x,y,w,h,x1,y1,person=false){
+  constructor(x,y,w,h,x1,y1,isWall,person=false){
     this.p = new Path2D();
     this.x = x
     this.y = y
     this.w = w
     this.h = h
     this.x1 = x1
-    this.y2 = y1
+    this.y1 = y1
     this.p.rect(x,y,w,h)
-    this.color = 'black'
+    this.color = isWall ? 'black' : 'white'
     this.passed = 'white'
     this.person = person
+    this.visible = false
+    this.wall = isWall
+    this.f;
+    this.g;
+    this.heu;
+    this.cost = 1;
+    this.visited = false;
+    this.closed = false;
+    this.parent = null;
   }
   show() {
     this.visible = true
@@ -54,15 +63,25 @@ class Point {
     this.visible = false
     this._draw()
   }
+  see() {
+    ctx.fillStyle = 'blue'
+    this._draw()
+  }
+  get pos() {
+    return {
+      x: this.x1,
+      y: this.y1,
+    }
+  }
 }
 
 function drawMatrix(size=5) {
   ctx.clearRect(0,0,w,h)
   return Array.from({length: h / size},
     (_, j) => Array.from({length: w / size }, (_, i) => {
-      var getaCoin = Math.round(Math.random() + 0.2) 
-      var point = new Point(i * size, j * size, size, size, i, j)
-      getaCoin ? point.clear() : point.show()
+      var isWall = Math.round(Math.random() + 0.2) 
+      var point = new Point(i * size, j * size, size, size, i, j, !isWall)
+      point.show()
       return point
     }
     )
@@ -98,7 +117,7 @@ window.onload = () => startMatrix()
 
 function getNewPosition(d){
   var x = start.x1
-    , y = start.y2
+    , y = start.y1
     , person = start.person
 
   switch (d) {
@@ -121,7 +140,7 @@ function getNewPosition(d){
       }
 
   console.log('Called getNewPosition', start, pos)
-  if (!pos.visible){
+  if (!pos.wall){
     [start,  pos] = [pos, start]
     if (person){
       start.person = person
@@ -152,3 +171,132 @@ document.addEventListener('keydown', event => {
 }, false)
 
 
+const heap = () => [node => node.f]
+const manhattan = (pos0, pos1) => {
+  var d1 = Math.abs(pos1.x - pos0.x)
+  var d2 = Math.abs(pos1.y - pos0.y)
+  return d1 + d2
+}
+
+function getNeighbors (grid, currentNode, diagonal=false) {
+  var ret = [];
+  var x = currentNode.y1;
+  var y = currentNode.x1;
+
+  if (grid[x-1] && grid[x-1][y]){
+    ret.push(grid[x-1][y])
+  }
+
+  if (grid[x+1] && grid[x+1][y]){
+    ret.push(grid[x+1][y])
+  }
+
+
+  // South
+  if(grid[x] && grid[x][y-1]) {
+    ret.push(grid[x][y-1]);
+  }
+
+  // North
+  if(grid[x] && grid[x][y+1]) {
+    ret.push(grid[x][y+1]);
+  }
+
+  if (diagonal) {
+
+    // Southwest
+    if(grid[x-1] && grid[x-1][y-1]) {
+      ret.push(grid[x-1][y-1]);
+    }
+
+    // Southeast
+    if(grid[x+1] && grid[x+1][y-1]) {
+      ret.push(grid[x+1][y-1]);
+    }
+
+    // Northwest
+    if(grid[x-1] && grid[x-1][y+1]) {
+      ret.push(grid[x-1][y+1]);
+    }
+
+    // Northeast
+    if(grid[x+1] && grid[x+1][y+1]) {
+      ret.push(grid[x+1][y+1]);
+    }
+
+  }
+
+  return ret;
+
+}
+
+function sleep (time) {
+  return new Promise((resolve) => setTimeout(resolve, time));
+}
+  
+const search = (grid, start, end, heu) => {
+  heu = heu || manhattan
+
+  var openHeap = heap();
+
+  openHeap.push(start);
+
+  while(openHeap.length){
+    var currentNode = openHeap.pop();
+
+    if(currentNode === end) {
+      var curr = currentNode;
+      var ret = [];
+      while(curr.parent){
+        ret.push(curr)
+        curr = curr.parent
+      }
+      return ret.reverse();
+    }
+
+    currentNode.closed = true;
+
+    var neighbors = getNeighbors(grid, currentNode)
+
+    neighbors.forEach(neighbor => {
+
+    if(!(neighbor.closed || neighbor.wall)){
+
+      var gScore = currentNode.g + neighbors.cost;
+      var beenVisited = neighbor.visited;
+
+      if(!beenVisited || gScore < neighbors.g){
+        neighbors.visited = true;
+        neighbor.parent = currentNode;
+        neighbor.heu = neighbor.heu || heu(neighbor.pos, end.pos)
+        neighbor.g = gScore
+        neighbor.f = neighbor.g + neighbor.heu;
+
+        if (!beenVisited) {
+          neighbor.see()
+          sleep(20000)
+          neighbor.show()
+          openHeap.push(neighbor)
+        } else {
+          openHeap.rescoreElement(neighbor)
+        }
+      }
+      }
+      }
+    )
+  }
+
+  return [];
+}
+
+function showPath () {
+  search(mx, start, end, manhattan).forEach( e => e != end ? e.see() : e.show())
+}
+
+function clearPath() {
+  mx.forEach(r => r.forEach(n => {
+    n.show()
+    n.visited = false
+    n.closed = false
+  }))
+}
