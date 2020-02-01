@@ -21,8 +21,6 @@ function handleResize(){
   h = ctx.canvas.height = window.innerHeight;
 }
 
-window.onresize = () => handleResize();
-handleResize();
 
 class Point {
   constructor(x,y,w,h,x1,y1,isWall,person=false){
@@ -112,32 +110,35 @@ function startMatrix(){
   start.show()
 }
 
-window.onload = () => startMatrix()
 
 
 function getNewPosition(d){
   var x = start.x1
     , y = start.y1
-    , person = start.person
 
   switch (d) {
       case 'left':
         console.log('left and %s %s', x,y)
-      pos = x > 0 ? mx[y][x - 1] : mx[y][x]
+        pos = (mx[y][x -1 ] && mx[y]) ? mx[y][x - 1] : mx[y][x]
       break;
       case 'right':
         console.log('right and %s %s', x,y)
-      pos = mx[y][x + 1]
+        if (mx[y][x+1] && mx[y]) pos = mx[y][x + 1]
       break;
       case 'up':
         console.log('up and %s %s', x,y)
-      pos = y > 0 ? mx[y - 1][x] : mx[y][x]
+        if (mx[y-1][x]) pos = mx[y - 1][x]
       break;
       case 'dawn':
         console.log('down and %s %s', x,y)
-      pos = mx[y + 1][x]
+        if (mx[y+1][x]) pos = mx[y + 1][x]
       break;
       }
+  move_person_to(pos)
+}
+
+function move_person_to(pos){
+  var person = start.person
 
   console.log('Called getNewPosition', start, pos)
   if (!pos.wall){
@@ -191,7 +192,6 @@ function getNeighbors (grid, currentNode, diagonal=false) {
     ret.push(grid[x+1][y])
   }
 
-
   // South
   if(grid[x] && grid[x][y-1]) {
     ret.push(grid[x][y-1]);
@@ -227,13 +227,8 @@ function getNeighbors (grid, currentNode, diagonal=false) {
   }
 
   return ret;
-
 }
 
-function sleep (time) {
-  return new Promise((resolve) => setTimeout(resolve, time));
-}
-  
 const search = (grid, start, end, heu) => {
   heu = heu || manhattan
 
@@ -251,7 +246,7 @@ const search = (grid, start, end, heu) => {
         ret.push(curr)
         curr = curr.parent
       }
-      return ret.reverse();
+      return ret;
     }
 
     currentNode.closed = true;
@@ -273,9 +268,6 @@ const search = (grid, start, end, heu) => {
         neighbor.f = neighbor.g + neighbor.heu;
 
         if (!beenVisited) {
-          neighbor.see()
-          sleep(20000)
-          neighbor.show()
           openHeap.push(neighbor)
         } else {
           openHeap.rescoreElement(neighbor)
@@ -289,8 +281,10 @@ const search = (grid, start, end, heu) => {
   return [];
 }
 
+var dest_path = [];
 function showPath () {
-  search(mx, start, end, manhattan).forEach( e => e != end ? e.see() : e.show())
+  dest_path = search(mx, start, end, manhattan)
+  dest_path.forEach( e => e != end ? e.see() : e.show())
 }
 
 function clearPath() {
@@ -299,4 +293,30 @@ function clearPath() {
     n.visited = false
     n.closed = false
   }))
+}
+
+window.onresize = () => { handleResize(); startMatrix(); }
+handleResize();
+
+function stupid_move() { 
+  d = new Date();
+  if(d % 60 === 0 || d % 30 === 0 ){
+    if (dest_path.length) {
+      move_person_to(dest_path.pop());
+    } else {
+      cancelAnimationFrame(animates)
+    }
+  }
+}
+
+function animates(){
+  stupid_move();
+  requestAnimationFrame(animates);
+}
+startMatrix()
+//animate()
+//window.onload = () => animate()
+function startAnimate(){
+  showPath();
+  animates();
 }
