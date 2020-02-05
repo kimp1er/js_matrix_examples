@@ -2,7 +2,6 @@
 <html>
   <head>
     <title>Matrix mutation show</title>
-    <script type="application/javascript" src="https://kit.fontawesome.com/1356018f6b.js"></script>
     <link rel="stylesheet" href="style.css" type="text/css" media="all">
   </head>
   <body>
@@ -11,9 +10,12 @@
       <button type="submit" onclick="startMatrix()">Reload</button>
       <button type="submit" onclick="clearPath()">Clear</button>
       <button type="submit" onclick="startAnimate()">Animate</button>
+      <button type="submit" onclick="loadAndDrawMatrix('matrix')">LoadMatrix</button>
+      <button type="submit" onclick="startMatrixToLocalStorage('matrix')">SaveMatrix</button>
     <div>
-    <canvas id="matrixField">
-    </canvas>
+
+    <canvas id="matrixField"> </canvas>
+
     <script type="application/javascript" src="matrix.js"></script>
   </body>
 </html>
